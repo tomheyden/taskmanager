@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { SESSION_COOKIE, sessionCookieOptions, signSession } from "@/lib/session";
 
@@ -17,7 +17,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
   if (!email || !password) return { error: "Bitte E-Mail und Passwort eingeben." };
 
-  const user = await db.query.users.findFirst({ where: eq(users.email, email) });
+  const user = await getDb().query.users.findFirst({ where: eq(users.email, email) });
   const ok = user ? await bcrypt.compare(password, user.passwordHash) : false;
   if (!user || !ok) return { error: "E-Mail oder Passwort stimmen nicht." };
 

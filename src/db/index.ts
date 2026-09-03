@@ -1,17 +1,38 @@
-import { createClient, type Client } from "@libsql/client";
+import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 
-const globalForDb = globalThis as unknown as { libsqlClient?: Client };
+/**
+ * Verbindungsdaten erst beim ersten Zugriff auflösen, nicht beim Import.
+ * Sonst bricht schon `next build` ab, wenn DATABASE_URL noch nicht gesetzt ist.
+ */
+function resolveUrl() {
+  const url = process.env.DATABASE_URL?.trim();
+  if (url) return url;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "DATABASE_URL fehlt. In Produktion braucht Stichtag eine gehostete libSQL-Datenbank (libsql://...), siehe README.",
+    );
+  }
+  return "file:./data/stichtag.db";
+}
 
-const client =
-  globalForDb.libsqlClient ??
-  createClient({
-    url: process.env.DATABASE_URL ?? "file:./data/stichtag.db",
-    authToken: process.env.DATABASE_AUTH_TOKEN || undefined,
+function createDb() {
+  const client = createClient({
+    url: resolveUrl(),
+    authToken: process.env.DATABASE_AUTH_TOKEN?.trim() || undefined,
   });
+  return drizzle(client, { schema });
+}
 
-if (process.env.NODE_ENV !== "production") globalForDb.libsqlClient = client;
+type Db = ReturnType<typeof createDb>;
 
-export const db = drizzle(client, { schema });
+// Verbindung über Hot Reloads und wiederverwendete Function-Instanzen hinweg behalten.
+const globalForDb = globalThis as unknown as { stichtagDb?: Db };
+
+export function getDb(): Db {
+  globalForDb.stichtagDb ??= createDb();
+  return globalForDb.stichtagDb;
+}
+
 export { schema };

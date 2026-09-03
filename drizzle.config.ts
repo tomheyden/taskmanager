@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { defineConfig } from "drizzle-kit";
 
-const url = process.env.DATABASE_URL ?? "file:./data/stichtag.db";
+const url = process.env.DATABASE_URL?.trim() || "file:./data/stichtag.db";
 const isRemote = url.startsWith("libsql://") || url.startsWith("https://");
 
 export default defineConfig({

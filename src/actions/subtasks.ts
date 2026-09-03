@@ -2,7 +2,7 @@
 
 import { eq, max } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { subtasks, tasks } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 
@@ -13,18 +13,18 @@ function revalidate(taskId: string) {
 }
 
 async function touch(taskId: string) {
-  await db.update(tasks).set({ updatedAt: new Date().toISOString() }).where(eq(tasks.id, taskId));
+  await getDb().update(tasks).set({ updatedAt: new Date().toISOString() }).where(eq(tasks.id, taskId));
 }
 
 export async function addSubtask(taskId: string, title: string) {
   await requireUser();
   const clean = title.trim();
   if (!clean) return;
-  const [{ value }] = await db
+  const [{ value }] = await getDb()
     .select({ value: max(subtasks.position) })
     .from(subtasks)
     .where(eq(subtasks.taskId, taskId));
-  await db.insert(subtasks).values({
+  await getDb().insert(subtasks).values({
     id: crypto.randomUUID(),
     taskId,
     title: clean,
@@ -38,9 +38,9 @@ export async function addSubtask(taskId: string, title: string) {
 
 export async function toggleSubtask(id: string, done: boolean) {
   await requireUser();
-  const row = await db.query.subtasks.findFirst({ where: eq(subtasks.id, id) });
+  const row = await getDb().query.subtasks.findFirst({ where: eq(subtasks.id, id) });
   if (!row) return;
-  await db.update(subtasks).set({ done }).where(eq(subtasks.id, id));
+  await getDb().update(subtasks).set({ done }).where(eq(subtasks.id, id));
   await touch(row.taskId);
   revalidate(row.taskId);
 }
@@ -48,17 +48,17 @@ export async function toggleSubtask(id: string, done: boolean) {
 export async function renameSubtask(id: string, title: string) {
   await requireUser();
   const clean = title.trim();
-  const row = await db.query.subtasks.findFirst({ where: eq(subtasks.id, id) });
+  const row = await getDb().query.subtasks.findFirst({ where: eq(subtasks.id, id) });
   if (!row || !clean) return;
-  await db.update(subtasks).set({ title: clean }).where(eq(subtasks.id, id));
+  await getDb().update(subtasks).set({ title: clean }).where(eq(subtasks.id, id));
   revalidate(row.taskId);
 }
 
 export async function deleteSubtask(id: string) {
   await requireUser();
-  const row = await db.query.subtasks.findFirst({ where: eq(subtasks.id, id) });
+  const row = await getDb().query.subtasks.findFirst({ where: eq(subtasks.id, id) });
   if (!row) return;
-  await db.delete(subtasks).where(eq(subtasks.id, id));
+  await getDb().delete(subtasks).where(eq(subtasks.id, id));
   await touch(row.taskId);
   revalidate(row.taskId);
 }

@@ -1,7 +1,7 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { count, eq } from "drizzle-orm";
-import { db } from "./index";
+import { getDb } from "./index";
 import { projects, subtasks, tasks, users } from "./schema";
 
 const now = () => new Date().toISOString();
@@ -14,7 +14,7 @@ function isoDaysFromToday(days: number) {
 }
 
 async function ensureUser(name: string, email: string, password: string, color: string) {
-  const existing = await db.query.users.findFirst({ where: eq(users.email, email) });
+  const existing = await getDb().query.users.findFirst({ where: eq(users.email, email) });
   if (existing) return existing;
   const user = {
     id: id(),
@@ -24,16 +24,16 @@ async function ensureUser(name: string, email: string, password: string, color: 
     color,
     createdAt: now(),
   };
-  await db.insert(users).values(user);
+  await getDb().insert(users).values(user);
   console.log(`Konto angelegt: ${name} <${email}>`);
   return user;
 }
 
 async function ensureProject(name: string, color: string) {
-  const existing = await db.query.projects.findFirst({ where: eq(projects.name, name) });
+  const existing = await getDb().query.projects.findFirst({ where: eq(projects.name, name) });
   if (existing) return existing;
   const project = { id: id(), name, color, createdAt: now() };
-  await db.insert(projects).values(project);
+  await getDb().insert(projects).values(project);
   console.log(`Projekt angelegt: ${name}`);
   return project;
 }
@@ -60,7 +60,7 @@ async function main() {
 
   if (!demo) return;
 
-  const [{ value: existing }] = await db.select({ value: count() }).from(tasks);
+  const [{ value: existing }] = await getDb().select({ value: count() }).from(tasks);
   if (existing > 0) {
     console.log("Es gibt bereits Aufgaben, Demo-Daten werden nicht angelegt.");
     return;
@@ -183,7 +183,7 @@ async function main() {
   for (const t of demoTasks) {
     const taskId = id();
     const created = now();
-    await db.insert(tasks).values({
+    await getDb().insert(tasks).values({
       id: taskId,
       title: t.title,
       description: t.description,
@@ -198,7 +198,7 @@ async function main() {
       completedAt: t.status === "done" ? created : null,
     });
     for (const [index, [title, done]] of t.steps.entries()) {
-      await db.insert(subtasks).values({
+      await getDb().insert(subtasks).values({
         id: id(),
         taskId,
         title,

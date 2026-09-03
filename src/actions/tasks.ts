@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import {
   PRIORITIES,
   STATUSES,
@@ -72,7 +72,7 @@ export async function createTask(_prev: TaskFormState, formData: FormData): Prom
 
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
-  await db.insert(tasks).values({
+  await getDb().insert(tasks).values({
     id,
     title: data.title,
     description: data.description,
@@ -86,7 +86,7 @@ export async function createTask(_prev: TaskFormState, formData: FormData): Prom
     updatedAt: now,
   });
   if (data.steps.length) {
-    await db.insert(subtasks).values(
+    await getDb().insert(subtasks).values(
       data.steps.map((title, position) => ({
         id: crypto.randomUUID(),
         taskId: id,
@@ -110,7 +110,7 @@ export async function updateTask(
   const { data, error } = await parseTaskForm(formData);
   if (!data) return { error };
 
-  await db
+  await getDb()
     .update(tasks)
     .set({
       title: data.title,
@@ -132,7 +132,7 @@ export async function setStatus(formData: FormData) {
   const status = String(formData.get("status") ?? "") as Status;
   if (!id || !STATUSES.includes(status)) return;
   const now = new Date().toISOString();
-  await db
+  await getDb()
     .update(tasks)
     .set({ status, updatedAt: now, completedAt: status === "done" ? now : null })
     .where(eq(tasks.id, id));
@@ -141,7 +141,7 @@ export async function setStatus(formData: FormData) {
 
 export async function deleteTask(id: string) {
   await requireUser();
-  await db.delete(tasks).where(eq(tasks.id, id));
+  await getDb().delete(tasks).where(eq(tasks.id, id));
   revalidateAll();
   redirect("/aufgaben");
 }
