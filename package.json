@@ -12,7 +12,10 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:demo": "tsx src/db/seed.ts --demo",
     "db:setup": "pnpm db:push && pnpm db:seed",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:push:prod": "dotenv -e .env.production.local -- drizzle-kit push",
+    "db:seed:prod": "dotenv -e .env.production.local -- tsx src/db/seed.ts",
+    "db:setup:prod": "pnpm db:push:prod && pnpm db:seed:prod"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
@@ -32,6 +35,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.4.2",
+    "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",

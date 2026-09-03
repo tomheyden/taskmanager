@@ -41,21 +41,59 @@ Beispieldaten zum Ausprobieren: `pnpm db:demo` legt acht Demo-Aufgaben an (nur, 
 | `pnpm db:seed`    | Konten und Standardprojekte anlegen (idempotent)       |
 | `pnpm db:demo`    | Seed plus Demo-Aufgaben                                |
 | `pnpm db:studio`  | Drizzle Studio, um direkt in die Daten zu schauen      |
+| `pnpm db:setup:prod` | Dasselbe gegen die Produktionsdatenbank             |
 
 ## Konten
 
 Es gibt keine Registrierung. Die beiden Konten kommen aus `.env.local` (`PARTNER_1_*`, `PARTNER_2_*`) und werden mit `pnpm db:seed` angelegt. Der Seed überspringt Konten, die es schon gibt. Passwort später ändern: in der App unter Einstellungen.
 
-## Deployment (z. B. Vercel)
+## Datenbank
 
-Die lokale SQLite-Datei funktioniert nur auf einem Rechner. Für den gemeinsamen Zugriff braucht ihr eine gehostete libSQL-Datenbank:
+Stichtag nutzt libSQL über Drizzle ORM. Es gibt genau zwei Betriebsarten, der Code ist derselbe:
 
-1. Bei [Turso](https://turso.tech) eine Datenbank anlegen, URL (`libsql://...`) und Token kopieren.
-2. Auf Vercel als Umgebungsvariablen setzen: `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `AUTH_SECRET`, sowie die `PARTNER_*`-Variablen.
-3. Einmalig gegen die Produktionsdatenbank ausführen: `DATABASE_URL=libsql://... DATABASE_AUTH_TOKEN=... pnpm db:setup`
-4. Projekt deployen.
+| Wo | `DATABASE_URL` | Geteilt? |
+| --- | --- | --- |
+| Lokal | `file:./data/stichtag.db` | Nein, nur auf diesem Rechner |
+| Produktion | `libsql://...` von Turso | Ja, beide sehen dieselben Daten |
 
-`AUTH_SECRET` sollte ein langer Zufallswert sein, z. B. aus `openssl rand -hex 32`.
+Die Verbindung wird erst beim ersten Zugriff geöffnet, nicht beim Import. Dadurch läuft `next build`
+auch ohne gesetzte Datenbank durch. Fehlt in Produktion eine Datenbank, kommt eine klare Fehlermeldung
+statt eines Absturzes beim Bauen. Erkannt werden `DATABASE_URL` und `DATABASE_AUTH_TOKEN` sowie die
+Namen `TURSO_DATABASE_URL` und `TURSO_AUTH_TOKEN`, die die Vercel-Integration selbst setzt.
+
+## Deployment auf Vercel
+
+Die lokale SQLite-Datei funktioniert nur auf einem Rechner, und Vercel hat kein beschreibbares
+Dateisystem. Für den gemeinsamen Zugriff braucht ihr deshalb eine gehostete Datenbank.
+
+**1. Turso über den Vercel Marketplace installieren**
+
+```bash
+vercel link --yes --project taskmanager
+vercel integration add tursocloud/database --name stichtag-db
+```
+
+Beim ersten Mal verlangt Turso, dass die Nutzungsbedingungen im Browser bestätigt werden. Danach den
+`add`-Befehl erneut ausführen. Die Integration legt die Datenbank an, verbindet sie mit dem Projekt
+und setzt die Umgebungsvariablen automatisch.
+
+**2. Login-Schlüssel setzen**, falls noch nicht geschehen:
+
+```bash
+vercel env add AUTH_SECRET production --value "$(openssl rand -hex 32)" --sensitive --yes
+```
+
+**3. Tabellen anlegen und die beiden Konten erzeugen.** Einmalig gegen die Produktionsdatenbank:
+
+```bash
+vercel env pull .env.production.local --environment=production --yes
+pnpm db:setup:prod
+```
+
+Die `PARTNER_*`-Variablen liest nur das Seed-Skript, die Anwendung selbst braucht sie zur Laufzeit
+nicht. Passwörter ändert ihr danach in der App unter Einstellungen.
+
+**4. Deployen.** Jeder Push auf `main` löst ein Deployment aus.
 
 ## Struktur
 
