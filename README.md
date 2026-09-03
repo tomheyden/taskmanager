@@ -18,6 +18,8 @@ Next.js 16 (App Router, Server Actions), Tailwind CSS 4, Drizzle ORM mit libSQL 
 ## Lokal starten
 
 ```bash
+git clone https://github.com/tomheyden/taskmanager.git
+cd taskmanager
 pnpm install
 cp .env.example .env.local   # Namen, E-Mails, Passwörter und AUTH_SECRET anpassen
 pnpm db:setup                # Tabellen anlegen und die beiden Konten erzeugen
