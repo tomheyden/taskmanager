@@ -1,26 +1,207 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: #0f1116;
+  --color-surface: #151820;
+  --color-surface-2: #1b1f29;
+  --color-surface-3: #222734;
+  --color-line: #262b37;
+  --color-line-strong: #343b4a;
+  --color-ink: #eceef3;
+  --color-ink-2: #9aa3b5;
+  --color-ink-3: #697184;
+  --color-paper: #f3f1ec;
+  --color-calm: #86bd9f;
+  --color-soon: #e8b658;
+  --color-urgent: #f27f6f;
+  --color-mute: #6e7a93;
+
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), var(--font-instrument), ui-sans-serif, sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    color-scheme: dark;
+    background: var(--color-bg);
+  }
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--color-paper) 22%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--color-paper) 70%, transparent);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Basisbausteine als Utilities, damit sie per @apply weiterverwendet werden können. */
+
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+}
+
+@utility btn {
+  @apply inline-flex h-9 items-center gap-2 rounded-md border px-3.5 text-sm font-medium whitespace-nowrap transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility btn-primary {
+  @apply btn border-paper bg-paper text-[#111318] hover:border-white hover:bg-white;
+}
+
+@utility btn-ghost {
+  @apply btn border-line bg-transparent text-ink hover:border-line-strong hover:bg-surface-2;
+}
+
+@utility btn-quiet {
+  @apply btn border-transparent bg-transparent text-ink-2 hover:bg-surface-2 hover:text-ink;
+}
+
+@utility btn-danger {
+  @apply btn border-transparent bg-transparent text-ink-2 hover:text-urgent;
+  &:hover {
+    background: color-mix(in oklab, var(--color-urgent) 14%, transparent);
+  }
+}
+
+@utility btn-sm {
+  @apply h-8 px-3 text-[13px];
+}
+
+@utility btn-icon {
+  @apply h-8 w-8 justify-center px-0;
+}
+
+@utility input {
+  @apply h-10 w-full rounded-md border border-line bg-surface-2 px-3 text-sm text-ink transition-colors placeholder:text-ink-3 focus:border-line-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-paper/40;
+}
+
+@utility textarea {
+  @apply input h-auto min-h-28 resize-y py-2.5 leading-relaxed;
+}
+
+@utility select {
+  @apply input appearance-none bg-no-repeat pr-9;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239aa3b5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+  background-position: right 10px center;
+}
+
+@utility label {
+  @apply mb-1.5 block text-[13px] font-medium text-ink-2;
+}
+
+@utility panel {
+  @apply rounded-lg border border-line bg-surface;
+}
+
+@utility row {
+  @apply flex items-center gap-4 px-5 py-4 transition-colors duration-150;
+  & + & {
+    border-top: 1px solid var(--color-line);
+  }
+}
+
+@utility row-hover {
+  &:hover {
+    background: var(--color-surface-2);
+  }
+}
+
+@utility chip {
+  @apply inline-flex h-6 items-center gap-1.5 rounded-sm px-2 text-[12px] font-medium whitespace-nowrap;
+}
+
+@utility chip-overdue {
+  @apply chip text-urgent;
+  background: color-mix(in oklab, var(--color-urgent) 16%, transparent);
+}
+
+@utility chip-today {
+  @apply chip text-urgent;
+  background: color-mix(in oklab, var(--color-urgent) 16%, transparent);
+}
+
+@utility chip-soon {
+  @apply chip text-soon;
+  background: color-mix(in oklab, var(--color-soon) 15%, transparent);
+}
+
+@utility chip-calm {
+  @apply chip text-calm;
+  background: color-mix(in oklab, var(--color-calm) 14%, transparent);
+}
+
+@utility chip-done {
+  @apply chip bg-surface-3 text-ink-2;
+}
+
+@utility chip-neutral {
+  @apply chip bg-surface-3 text-ink-2;
+}
+
+@utility pill {
+  @apply inline-flex h-8 items-center rounded-full border border-line px-3 text-[13px] text-ink-2 transition-colors hover:border-line-strong hover:text-ink;
+}
+
+@utility pill-active {
+  @apply border-paper/80 bg-paper text-[#111318] hover:border-paper hover:text-[#111318];
+}
+
+@utility nav-link {
+  @apply flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[14px] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink;
+}
+
+@utility nav-link-active {
+  @apply bg-surface-2 text-ink;
+}
+
+@utility check {
+  @apply grid h-5 w-5 shrink-0 place-items-center rounded-full border border-line-strong text-transparent transition-colors duration-150 hover:border-ink-2;
+}
+
+@utility check-on {
+  @apply border-calm bg-calm text-[#0f1116] hover:border-calm;
+}
+
+@keyframes strike {
+  from {
+    background-size: 0% 1px;
+  }
+  to {
+    background-size: 100% 1px;
+  }
+}
+
+@utility struck {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 55%;
+  background-size: 100% 1px;
+  animation: strike 220ms ease-out;
 }

@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Stichtag
 
-## Getting Started
+Ein Aufgaben-Tool für zwei Geschäftspartner. Wenige, große Aufgaben statt vieler kleiner, jede mit einem klaren Stichtag, einer verantwortlichen Person und Teilschritten, an denen man den Fortschritt sieht.
 
-First, run the development server:
+## Was drin ist
+
+- **Übersicht**: Zeitstrahl der nächsten vier Wochen, Überfälliges zuerst, dann die Aufgaben von dir und deiner Partnerin nebeneinander.
+- **Aufgaben**: nach Dringlichkeit gruppiert (Überfällig, Heute, Diese Woche, Später), filterbar nach Person, Projekt und Status, mit Suche.
+- **Aufgabendetail**: Status umschalten (Offen, In Arbeit, Blockiert, Erledigt), Teilschritte abhaken, Beschreibung, Bearbeiten, Löschen.
+- **Projekte**: optionale Gruppierung mit Farbe.
+- **Einstellungen**: Name, Farbe, Passwort.
+- Login für genau die beiden Konten, die beim Seed angelegt werden.
+
+## Stack
+
+Next.js 16 (App Router, Server Actions), Tailwind CSS 4, Drizzle ORM mit libSQL (lokal SQLite-Datei, in Produktion z. B. Turso), Sessions per signiertem Cookie (jose), Passwörter mit bcrypt.
+
+## Lokal starten
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env.local   # Namen, E-Mails, Passwörter und AUTH_SECRET anpassen
+pnpm db:setup                # Tabellen anlegen und die beiden Konten erzeugen
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Dann `http://localhost:3000` öffnen und mit einem der beiden Konten aus `.env.local` anmelden.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Beispieldaten zum Ausprobieren: `pnpm db:demo` legt acht Demo-Aufgaben an (nur, wenn noch keine Aufgaben existieren).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Befehle
 
-## Learn More
+| Befehl            | Zweck                                                  |
+| ----------------- | ------------------------------------------------------ |
+| `pnpm dev`        | Entwicklungsserver                                     |
+| `pnpm build`      | Produktions-Build                                      |
+| `pnpm typecheck`  | TypeScript prüfen                                      |
+| `pnpm db:push`    | Schema in die Datenbank schreiben                      |
+| `pnpm db:seed`    | Konten und Standardprojekte anlegen (idempotent)       |
+| `pnpm db:demo`    | Seed plus Demo-Aufgaben                                |
+| `pnpm db:studio`  | Drizzle Studio, um direkt in die Daten zu schauen      |
 
-To learn more about Next.js, take a look at the following resources:
+## Konten
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Es gibt keine Registrierung. Die beiden Konten kommen aus `.env.local` (`PARTNER_1_*`, `PARTNER_2_*`) und werden mit `pnpm db:seed` angelegt. Der Seed überspringt Konten, die es schon gibt. Passwort später ändern: in der App unter Einstellungen.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment (z. B. Vercel)
 
-## Deploy on Vercel
+Die lokale SQLite-Datei funktioniert nur auf einem Rechner. Für den gemeinsamen Zugriff braucht ihr eine gehostete libSQL-Datenbank:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Bei [Turso](https://turso.tech) eine Datenbank anlegen, URL (`libsql://...`) und Token kopieren.
+2. Auf Vercel als Umgebungsvariablen setzen: `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `AUTH_SECRET`, sowie die `PARTNER_*`-Variablen.
+3. Einmalig gegen die Produktionsdatenbank ausführen: `DATABASE_URL=libsql://... DATABASE_AUTH_TOKEN=... pnpm db:setup`
+4. Projekt deployen.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`AUTH_SECRET` sollte ein langer Zufallswert sein, z. B. aus `openssl rand -hex 32`.
+
+## Struktur
+
+```
+src/
+  app/
+    login/            Anmeldung
+    (app)/            eingeloggter Bereich mit Sidebar
+      page.tsx        Übersicht
+      aufgaben/       Liste, Neu, Detail, Bearbeiten
+      projekte/
+      einstellungen/
+  actions/            Server Actions (tasks, subtasks, projects, settings)
+  components/         UI-Bausteine (TaskRow, Timeline, Subtasks, ...)
+  db/                 Drizzle-Schema, Client, Seed
+  lib/                Auth, Datumslogik, Konstanten, Queries
+  proxy.ts            Login-Schutz für alle Seiten
+```

@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# lokale Datenbank
+data/*.db
+data/*.db-*
+
+# Vorlage soll ins Repository
+!.env.example
